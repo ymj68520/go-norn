@@ -29,7 +29,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Norn is a blockchain node based on Proof of Verifiable Function (PoVF). Based on the unpredictability of verifiable 
+Norn is a blockchain node based on [Proof of Verifiable Function (PoVF)](https://doi.org/10.1016/j.comnet.2025.111092). Based on the unpredictability of verifiable 
 functions, PoVF provides a fair and decentralized consensus mechanism.
 
 <!-- GETTING STARTED -->
