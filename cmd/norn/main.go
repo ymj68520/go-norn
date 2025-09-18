@@ -5,6 +5,14 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"math/rand"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"runtime/pprof"
+	"time"
+
 	"github.com/chain-lab/go-norn/core"
 	metrics2 "github.com/chain-lab/go-norn/metrics"
 	"github.com/chain-lab/go-norn/node"
@@ -18,13 +26,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	"math/rand"
-	"net/http"
-	_ "net/http/pprof"
-	"os"
-	"os/signal"
-	"runtime/pprof"
-	"time"
 )
 
 // 测试指令：
@@ -189,7 +190,8 @@ func main() {
 	go pm.Discover(ctx, host, kdht, node.NetworkRendezvous)
 
 	// 事件订阅/发布协程
-	router := pubsub.CreateNewEventRouter()
+	var store pubsub.EventStore
+	router := pubsub.NewRouter(nil, store)
 	http.HandleFunc("/subscribe", router.HandleConnect)
 	go router.Process()
 	go http.ListenAndServe(":8888", nil)

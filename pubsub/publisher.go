@@ -1,30 +1,47 @@
-/**
-  @author: decision
-  @date: 2024/1/3
-  @note:
-**/
-
 package pubsub
 
 import (
+	"errors"
+	"sync"
+
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"sync"
 )
 
 const (
 	connPoolSize = 128
 )
 
-type EventPublisher struct {
+// Publisher 负责把事件发到本地 router 或者广播到网络
+type Publisher struct {
 	conns []*websocket.Conn
 	count int
 
-	lock sync.RWMutex
+	lock   sync.RWMutex
+	router *Router
+	// TODO: 注入 p2p/broadcast 客户端接口以便 network broadcast
 }
 
-func CreateNewEventPublisher() *EventPublisher {
-	publisher := EventPublisher{
+func NewPublisher(r *Router) *Publisher {
+	return &Publisher{router: r}
+}
+
+// PublishLocal 发布到本地 router
+func (p *Publisher) PublishLocal(e *Event) error {
+	if p.router == nil {
+		return errors.New("no router")
+	}
+	return p.router.Publish(e)
+}
+
+// BroadcastToNetwork 将事件广播到 p2p（需要实现 p2p 客户端）
+func (p *Publisher) BroadcastToNetwork(e *Event) error {
+	// TODO: serialize 并通过 p2p 发布
+	return errors.New("network broadcast not implemented")
+}
+
+func CreateNewEventPublisher() *Publisher {
+	publisher := Publisher{
 		conns: make([]*websocket.Conn, connPoolSize),
 		count: 0,
 	}
@@ -32,13 +49,13 @@ func CreateNewEventPublisher() *EventPublisher {
 	return &publisher
 }
 
-func (e *EventPublisher) Full() bool {
+func (e *Publisher) Full() bool {
 	e.lock.RLock()
 	defer e.lock.RUnlock()
 	return e.count >= connPoolSize
 }
 
-func (e *EventPublisher) Publish(data []byte) {
+func (e *Publisher) Publish(data []byte) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -57,7 +74,7 @@ func (e *EventPublisher) Publish(data []byte) {
 	}
 }
 
-func (e *EventPublisher) AppendNewConnection(conn *websocket.Conn) {
+func (e *Publisher) AppendNewConnection(conn *websocket.Conn) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -68,7 +85,7 @@ func (e *EventPublisher) AppendNewConnection(conn *websocket.Conn) {
 	}
 }
 
-func (e *EventPublisher) SelectPosition() int {
+func (e *Publisher) SelectPosition() int {
 	for idx := range e.conns {
 		if e.conns[idx] == nil {
 			return idx

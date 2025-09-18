@@ -5,12 +5,12 @@ package core
 import (
 	"encoding/hex"
 	"encoding/json"
+
 	"github.com/chain-lab/go-norn/common"
 	"github.com/chain-lab/go-norn/interfaces"
 	"github.com/chain-lab/go-norn/pubsub"
 	"github.com/chain-lab/go-norn/utils"
 	log "github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (
@@ -111,17 +111,18 @@ func (dp *DataProcessor) setData(task *DataTask) {
 	}
 
 	// 触发数据变更事件
-	router := pubsub.CreateNewEventRouter()
+	var store pubsub.EventStore
+	router := pubsub.NewRouter(nil, store)
 	event := pubsub.Event{
 		Type:    "data",
 		Hash:    hex.EncodeToString(task.Hash[:]),
-		Height:  strconv.Itoa(int(task.Height)),
+		Height:  task.Height,
 		Address: hex.EncodeToString(task.Address),
 		Params:  params,
 	}
 
 	log.Infof("Append task to router.")
-	router.AppendEvent(event)
+	router.AppendEvent(&event)
 }
 
 // appendData
@@ -174,15 +175,16 @@ func (dp *DataProcessor) appendData(task *DataTask) {
 	}
 
 	// 触发数据变更事件
-	router := pubsub.CreateNewEventRouter()
+	var store pubsub.EventStore
+	router := pubsub.NewRouter(nil, store)
 	event := pubsub.Event{
 		Type:    "data",
 		Hash:    hex.EncodeToString(task.Hash[:]),
-		Height:  strconv.Itoa(int(task.Height)),
+		Height:  task.Height,
 		Address: hex.EncodeToString(task.Address),
 		Params:  params,
 	}
 
 	log.Infof("Append task to router.")
-	router.AppendEvent(event)
+	router.AppendEvent(&event)
 }
