@@ -33,7 +33,7 @@ type RouterConfig struct {
 
 type Router struct {
 	cfg         RouterConfig
-	queue       chan *Event
+	publishChan chan *Event
 	subs        map[string]*Subscriber
 	publishMap  map[EventTopic]*Publisher
 	mu          sync.RWMutex
@@ -43,7 +43,7 @@ type Router struct {
 	nextSeq     uint64
 	store       EventStore // optional persistence
 	started     bool
-	startStopMu sync.RWMutex
+	lock        sync.RWMutex
 }
 
 var (
@@ -69,20 +69,20 @@ func NewRouter(cfg *RouterConfig, store EventStore) *Router {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	r := &Router{
-		cfg:    c,
-		queue:  make(chan *Event, c.QueueSize),
-		subs:   make(map[string]*Subscriber),
-		ctx:    ctx,
-		cancel: cancel,
-		store:  store,
+		cfg:         c,
+		publishChan: make(chan *Event, c.QueueSize),
+		subs:        make(map[string]*Subscriber),
+		ctx:         ctx,
+		cancel:      cancel,
+		store:       store,
 	}
 	return r
 }
 
 // Start 启动 dispatcher
 func (r *Router) Start() error {
-	r.startStopMu.Lock()
-	defer r.startStopMu.Unlock()
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	if r.started {
 		return nil
 	}
@@ -103,13 +103,13 @@ func (r *Router) Start() error {
 
 // Stop 停止 router
 func (r *Router) Stop() {
-	r.startStopMu.Lock()
+	r.lock.Lock()
 	if !r.started {
-		r.startStopMu.Unlock()
+		r.lock.Unlock()
 		return
 	}
 	r.started = false
-	r.startStopMu.Unlock()
+	r.lock.Unlock()
 
 	r.cancel()
 	r.wg.Wait()
@@ -165,23 +165,23 @@ func (r *Router) Publish(e *Event) error {
 	switch r.cfg.QueuePolicy {
 	case QueueBlock:
 		select {
-		case r.queue <- e:
+		case r.publishChan <- e:
 			return nil
 		case <-r.ctx.Done():
 			return r.ctx.Err()
 		}
 	case QueueDropOldest:
 		select {
-		case r.queue <- e:
+		case r.publishChan <- e:
 			return nil
 		default:
 			// drop oldest
 			select {
-			case <-r.queue:
+			case <-r.publishChan:
 			default:
 			}
 			select {
-			case r.queue <- e:
+			case r.publishChan <- e:
 				return nil
 			default:
 				return errors.New("enqueue failed after dropping oldest")
@@ -189,7 +189,7 @@ func (r *Router) Publish(e *Event) error {
 		}
 	default: // QueueDropNewest
 		select {
-		case r.queue <- e:
+		case r.publishChan <- e:
 			return nil
 		default:
 			// drop newest i.e. drop this event
@@ -200,6 +200,7 @@ func (r *Router) Publish(e *Event) error {
 
 // AppendEvent alias Publish
 func (r *Router) AppendEvent(e *Event) error {
+	// r.publishChan <- e
 	return r.Publish(e)
 }
 
@@ -209,7 +210,7 @@ func (r *Router) dispatcher() {
 		select {
 		case <-r.ctx.Done():
 			return
-		case e := <-r.queue:
+		case e := <-r.publishChan:
 			r.dispatchEvent(e)
 		}
 	}
@@ -241,27 +242,27 @@ func uuidNew() string {
 func (e *Router) Process() {
 	for {
 		select {
-		case event := <-e.queue:
+		case event := <-e.publishChan:
 			topic := toTopicStr(event.Address, event.Type)
 			log.Infof("Receive task with topic %s", topic)
-			e.startStopMu.RLock()
+			e.lock.RLock()
 
 			publisher, ok := e.publishMap[topic]
 			if publisher == nil || !ok {
-				e.startStopMu.RUnlock()
+				e.lock.RUnlock()
 				continue
 			}
 
 			eventData, err := json.Marshal(event)
 			if err != nil {
 				log.WithError(err).Debugln("Marshal event to bytes failed.")
-				e.startStopMu.RUnlock()
+				e.lock.RUnlock()
 				continue
 			}
 
 			publisher.Publish(eventData)
 
-			e.startStopMu.RUnlock()
+			e.lock.RUnlock()
 		}
 	}
 }
@@ -294,8 +295,8 @@ func (e *Router) HandleConnect(w http.ResponseWriter, r *http.Request) {
 	topic := toTopicStr(request.Address, request.EventType)
 	log.Infof("Receive subscribe with topic %s", topic)
 
-	e.startStopMu.Lock()
-	defer e.startStopMu.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	publisher, ok := e.publishMap[topic]
 
 	if !ok || publisher == nil {

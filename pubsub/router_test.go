@@ -7,13 +7,15 @@
 package pubsub
 
 import (
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func TestEventRouter_HandleConnect(t *testing.T) {
-	router := CreateNewEventRouter()
+	var store EventStore
+	router := NewRouter(nil, store)
 	http.HandleFunc("/subscribe", router.HandleConnect)
 	log.Fatal(http.ListenAndServe("localhost:8888", nil))
 }
