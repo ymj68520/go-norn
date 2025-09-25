@@ -76,6 +76,10 @@ func NewRouter(cfg *RouterConfig, store EventStore) *Router {
 		cancel:      cancel,
 		store:       store,
 	}
+	routerOnce.Do(func() { // 保持兼容
+		routerInst = r
+	},
+	)
 	return r
 }
 
