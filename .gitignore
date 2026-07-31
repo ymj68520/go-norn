@@ -1,28 +1,115 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+# ============================================
+# Go 构建产物
+# ============================================
+/bin/
+/bin-*
+/build/
+/dist/
+/out/
 
-# Test binary, built with `go test -c`
-*.test
+# 编译后的二进制文件
+*_arm64
+*_amd64
+*_386
+*_arm
+sender_arm64
+sender_amd64
+norn_arm64
+norn_amd64
+generate_arm64
+generate_amd64
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
+# ============================================
+# Go 模块和缓存
+# ============================================
+go.sum
 go.work
-.idea
+vendor/
+.workspace
 
-.DS_Store
-cmd/chronos/data*
+# Go build cache
+.cache/
+.build/
+*.cache
+
+# ============================================
+# 测试产物
+# ============================================
+*.test
+*.out
 *.profile
+coverage.txt
+coverage.html
+.test/
+test-results/
+*_test_results/
+*test_report*.md
+*.prof
+*.trace
 
+# ============================================
+# 数据目录
+# ============================================
 data/
+node_data/
+*_data/
+test_node_data/
+
+# ============================================
+# IDE 和编辑器
+# ============================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# ============================================
+# 日志文件
+# ============================================
+*.log
+logs/
+*.log.*
+
+# ============================================
+# 临时文件和缓存
+# ============================================
+*.tmp
+*.temp
+tmp/
+.tmp/
+.cache/
+*.cache
+
+# ============================================
+# 密钥文件（绝对不能提交）
+# ============================================
+*.key
+*.pem
+*.der
+*.p8
+*.pk8
+node.key
+*.priv
+*.secret
+
+# ============================================
+# Docker
+# ============================================
+.dockerignore
+
+# ============================================
+# 操作系统
+# ============================================
+.directory
+.Trash-*
+.nfs*
