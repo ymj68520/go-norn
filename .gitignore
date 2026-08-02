@@ -6,6 +6,7 @@
 /build/
 /dist/
 /out/
+*.exe
 
 # 编译后的二进制文件
 *_arm64
@@ -22,7 +23,6 @@ generate_amd64
 # ============================================
 # Go 模块和缓存
 # ============================================
-go.sum
 go.work
 vendor/
 .workspace
@@ -51,6 +51,7 @@ test-results/
 # 数据目录
 # ============================================
 data/
+data_go*/
 node_data/
 *_data/
 test_node_data/

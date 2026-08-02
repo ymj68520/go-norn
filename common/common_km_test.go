@@ -1,10 +1,11 @@
-package common
+package common_test
 
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"github.com/chain-lab/go-norn/common"
 	"github.com/chain-lab/go-norn/crypto"
 	log "github.com/sirupsen/logrus"
 	karmem "karmem.org/golang"
@@ -12,12 +13,12 @@ import (
 	"time"
 )
 
-func buildTransaction(key *ecdsa.PrivateKey) *Transaction {
+func buildTransaction(key *ecdsa.PrivateKey) *common.Transaction {
 	data := make([]byte, 32)
 	rand.Read(data)
 	timestamp := time.Now().UnixMilli()
 
-	txBody := TransactionBody{
+	txBody := common.TransactionBody{
 		Data:      data,
 		Timestamp: timestamp,
 		Expire:    timestamp + 3000,
@@ -44,7 +45,7 @@ func buildTransaction(key *ecdsa.PrivateKey) *Transaction {
 
 	txBody.Hash = [32]byte(txHashBytes)
 	txBody.Signature = txSignatureBytes
-	tx := Transaction{
+	tx := common.Transaction{
 		Body: txBody,
 	}
 

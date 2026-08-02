@@ -148,12 +148,12 @@ func (c *Calculator) AppendNewSeed(seed *big.Int, proof *big.Int) {
 	c.changeLock.Lock()
 	defer c.changeLock.Unlock()
 
-	log.Debugln("Now VDF seed: %s", hex.EncodeToString(c.seed.Bytes()))
+	log.Debugf("Now VDF seed: %s", hex.EncodeToString(c.seed.Bytes()))
 
 	// 检查如果当前的 seed 没有变化就直接返回 或者
 	// 如果当前的 seed 不是初始的0，并且输入无法通过验证则不更新
 	if c.prevSeed.Cmp(seed) == 0 || c.seed.Cmp(seed) == 0 || (c.seed.Cmp(zero) != 0 && !c.Verify(c.seed, proof, seed)) {
-		log.Debugln("Block VDF verify failed seed: %s, result: %s",
+		log.Debugf("Block VDF verify failed seed: %s, result: %s",
 			hex.EncodeToString(c.seed.Bytes()), hex.EncodeToString(seed.
 				Bytes()))
 		return
